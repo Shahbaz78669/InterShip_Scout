@@ -17,8 +17,15 @@ class Notifier:
 
     def __init__(self):
         # Email configuration (supports both EMAIL/EMAIL_PASSWORD and EMAIL_USER/EMAIL_PASS)
-        self.email_host = os.getenv("EMAIL_HOST", "smtp.gmail.com")
-        self.email_port = int(os.getenv("EMAIL_PORT", "587"))
+        host_val = os.getenv("EMAIL_HOST")
+        self.email_host = host_val.strip() if host_val and host_val.strip() else "smtp.gmail.com"
+
+        port_val = os.getenv("EMAIL_PORT")
+        if port_val and port_val.strip().isdigit():
+            self.email_port = int(port_val.strip())
+        else:
+            self.email_port = 587
+
         self.email_user = (os.getenv("EMAIL_USER") or os.getenv("EMAIL", "")).strip()
         raw_pass = os.getenv("EMAIL_PASS") or os.getenv("EMAIL_PASSWORD", "")
         self.email_pass = raw_pass.replace(" ", "").strip()

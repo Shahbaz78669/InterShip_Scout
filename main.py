@@ -35,23 +35,28 @@ def main():
     new_jobs_count = db.add_jobs(scraper.jobs)
     print(f"✅ Found {new_jobs_count} new opportunities (Scraped: {len(scraper.jobs)} total)")
 
+    is_dry_run = "--dry-run" in sys.argv or os.getenv("DRY_RUN", "false").lower() in ("true", "1")
+
     # Get unnotified jobs
     unnotified = db.get_new_jobs()
 
     if unnotified:
-        print(f"📬 Dispatching alerts for {len(unnotified)} unnotified jobs...")
-        email_sent = notifier.send_email(unnotified)
-        whatsapp_sent = notifier.send_whatsapp(unnotified)
-
-        if email_sent or whatsapp_sent:
-            notified_ids = [
-                job["job_id"] if "job_id" in job.keys() else job[1]
-                for job in unnotified
-            ]
-            db.mark_notified(notified_ids)
-            print(f"💾 Database updated: {len(notified_ids)} jobs marked as notified.")
+        if is_dry_run:
+            print(f"🧪 [DRY RUN] Found {len(unnotified)} unnotified jobs. Skipping notification dispatch.")
         else:
-            print("⚠️ Notification was not dispatched (check credentials). Jobs remain pending for next run.")
+            print(f"📬 Dispatching alerts for {len(unnotified)} unnotified jobs...")
+            email_sent = notifier.send_email(unnotified)
+            whatsapp_sent = notifier.send_whatsapp(unnotified)
+
+            if email_sent or whatsapp_sent:
+                notified_ids = [
+                    job["job_id"] if "job_id" in job.keys() else job[1]
+                    for job in unnotified
+                ]
+                db.mark_notified(notified_ids)
+                print(f"💾 Database updated: {len(notified_ids)} jobs marked as notified.")
+            else:
+                print("⚠️ Notification was not dispatched (check credentials). Jobs remain pending for next run.")
     else:
         print("💤 No pending jobs to notify.")
 
